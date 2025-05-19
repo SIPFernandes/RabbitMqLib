@@ -11,14 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.5" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 	<PackageReference Include="RabbitMQ.Client" Version="7.1.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Areas\Helpers\" />
-    <Folder Include="Areas\Interfaces\" />
-    <Folder Include="Areas\Services\" />
   </ItemGroup>
 
 </Project>
