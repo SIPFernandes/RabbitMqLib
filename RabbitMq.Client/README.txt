@@ -16,6 +16,15 @@ docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 -e RABBITMQ_DEFA
 3- Run the above docker command
 4- Run command to increase number of channels (max 100): channel_max = 100
 
+#Docker App vs IIS
+- If your App is running on IIS then your Hostname is: localhost
+- If your App is running in a Docker Container the Hostname is: rabbitmq (RabbitMQ container Name)
+	-> Make sure both containers use same network
+	 . docker network create mynetwork
+	 . docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 --network mynetwork rabbitmq:3.13-management
+	 . docker run -d --name IntCoreAds.Api --network mynetwork intcoreadsapi:dev
+
+
 #Add Docker Desktop to run at Startup
 
 #Create a Task in the deployment Server Task Scheduler
