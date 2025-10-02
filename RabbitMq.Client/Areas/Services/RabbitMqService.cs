@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMqLib.Client.Areas.Interfaces;
@@ -7,7 +8,8 @@ using System.Text;
 
 namespace RabbitMqLib.Client.Areas.Services
 {
-    public class RabbitMqService(IConfiguration configuration) : IRabbitMqSenderService, IRabbitMqReceiverService
+    public class RabbitMqService(ILogger<RabbitMqService> logger,
+        IConfiguration configuration) : IRabbitMqSenderService, IRabbitMqReceiverService
     {
         private readonly IConnection _connection = GetConnection(configuration).Result;
 
@@ -20,7 +22,8 @@ namespace RabbitMqLib.Client.Areas.Services
             await channel.CloseAsync();
         }
 
-        public async Task Receive(string queue, Func<object, string, Task> action)
+        public async Task Receive(string queue, Func<object, string, Task> action,
+            bool autoAck = true, bool requeue = false, CancellationToken cancellationToken = default)
         {
             var channel = await CreateChannel(queue);
 
@@ -28,58 +31,89 @@ namespace RabbitMqLib.Client.Areas.Services
 
             consumer.ReceivedAsync += async (model, ea) =>
             {
+
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 var body = ea.Body.ToArray();
 
                 var message = Encoding.UTF8.GetString(body);
 
-                await action(model, message);
+                try
+                {
+                    await action(model, message);
+
+                    if (!autoAck)
+                    {
+                        await channel.BasicAckAsync(ea.DeliveryTag, multiple: false, cancellationToken);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error during Action after receiving item from queue.");
+
+                    if (!autoAck)
+                    {
+                        await channel.BasicRejectAsync(ea.DeliveryTag, requeue: requeue, cancellationToken);
+                    }
+                }
             };
 
             await channel.BasicConsumeAsync(queue,
-                false, consumer);
-        }
+                autoAck, consumer, cancellationToken);
 
-        public async Task<Thread?> Pull(string queue, Func<string, Task<object>> action,
-            bool autoAck = true, bool requeue = false)
-        {
-            Thread? result = null;
 
-            var channel = await CreateChannel(queue);
-
-            var ea = await channel.BasicGetAsync(queue, autoAck);
-
-            if (ea != null)
+            // Keep the method alive until cancellation is requested
+            try
             {
-                var body = ea.Body.ToArray();
-
-                var message = Encoding.UTF8.GetString(body);
-
-                result = new Thread(async () =>
-                {
-                    try
-                    {
-                        await action(message);
-
-                        if (!autoAck)
-                        {
-                            await Acknowledge(queue, ea.DeliveryTag, false);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        if (!autoAck)
-                        {
-                            await Reject(queue, ea.DeliveryTag, requeue);
-                        }
-                    }
-                });
-
-                result.Start();
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+            catch (TaskCanceledException)
+            {
+                logger.LogError("Cancelation Token canceled.");
             }
 
-            await channel.CloseAsync();
+        }
 
-            return result;
+        public async Task<Task?> Pull(string queue, Func<string, Task<object>> action,
+            bool autoAck = true, bool requeue = false, CancellationToken cancellationToken = default)
+        {
+            var channel = await CreateChannel(queue);
+
+            var ea = await channel.BasicGetAsync(queue, autoAck, cancellationToken);
+
+            if (ea == null)
+            {
+                await channel.CloseAsync(cancellationToken);
+                return null;
+            }
+
+            var body = ea.Body.ToArray();
+            var message = Encoding.UTF8.GetString(body);
+
+            try
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    return null;
+
+                await action(message);
+
+                if (!autoAck)
+                    await Acknowledge(queue, ea.DeliveryTag, false);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error during Action after receiving item from queue.");
+
+                if (!autoAck)
+                    await Reject(queue, ea.DeliveryTag, requeue);
+            }
+            finally
+            {
+                await channel.CloseAsync(cancellationToken);
+            }
+
+            return Task.CompletedTask;
         }
         //autoAck: true
 
