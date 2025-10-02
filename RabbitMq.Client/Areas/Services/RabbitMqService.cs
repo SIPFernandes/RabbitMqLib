@@ -13,13 +13,13 @@ namespace RabbitMqLib.Client.Areas.Services
     {
         private readonly IConnection _connection = GetConnection(configuration).Result;
 
-        public async Task Send(string queue, string data)
+        public async Task Send(string queue, string data, CancellationToken cancellationToken = default)
         {
             var channel = await CreateChannel(queue);
 
-            await channel.BasicPublishAsync(string.Empty, queue, false, Encoding.UTF8.GetBytes(data));
+            await channel.BasicPublishAsync(string.Empty, queue, false, Encoding.UTF8.GetBytes(data), cancellationToken);
 
-            await channel.CloseAsync();
+            await channel.CloseAsync(cancellationToken);
         }
 
         public async Task Receive(string queue, Func<object, string, Task> action,

@@ -2,6 +2,6 @@
 {
     public interface IRabbitMqSenderService
     {
-        Task Send(string queue, string data);
+        Task Send(string queue, string data, CancellationToken cancellationToken = default);
     }
 }
