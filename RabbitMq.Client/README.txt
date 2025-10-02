@@ -4,9 +4,28 @@
 Register the service as singleton
 
 # no credentials (dev environment)
+
+Add to appsettings: 
+  "RabbitMQ": {
+    "HostName": "localhost",
+    "DisseminationQueue": "DisseminationQueue"
+  },
+
+Run command:
 docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.13-management
 
 # using credentials: (dont forget to change respective app.config)
+
+Add to appsettings:
+"RabbitMQ": {
+    "UsingCredentials": "true",
+    "UserName": "installuser",
+    "Password": "Password",
+    "HostName": "localhost",
+    "DisseminationQueue": "DisseminationQueue"
+  },
+
+Run command:
 docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 -e RABBITMQ_DEFAULT_USER=installuser -e RABBITMQ_DEFAULT_PASS=Password rabbitmq:3.13-management
 
 # check RabbitMQ management: http://localhost:15672/
