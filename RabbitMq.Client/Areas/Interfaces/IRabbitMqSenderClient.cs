@@ -4,7 +4,7 @@ namespace RabbitMqLib.Client.Areas.Interfaces
 {
     public interface IRabbitMqSenderClient
     {
-        Task PushDataToTarget(TargetQueueModel target, string data);
-        Task PushDataToTarget(IEnumerable<TargetQueueModel> targets, string data);
+        Task PublishQueueItem(TargetQueueModel target, string data);
+        Task PublishQueueItem(IEnumerable<TargetQueueModel> targets, string data);
     }
 }

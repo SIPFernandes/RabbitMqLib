@@ -154,7 +154,7 @@ namespace RabbitMqLib.Client.Areas.Services
 
             var rabbitMqClient = scope.ServiceProvider.GetRequiredService<IRabbitMqClient>();
 
-            await rabbitMqClient.ProcessQueueItem(queueItem, cancelationToken);
+            await rabbitMqClient.ConsumeQueueItem(queueItem, cancelationToken);
         }
     }
 }

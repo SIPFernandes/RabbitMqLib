@@ -35,15 +35,15 @@ namespace RabbitMqLib.Client.Areas.Services
                 );
         }
 
-        public async Task PushDataToTarget(IEnumerable<TargetQueueModel> targets, string data)
+        public async Task PublishQueueItem(IEnumerable<TargetQueueModel> targets, string data)
         {
             foreach (var target in targets)
             {
-                await PushDataToTarget(target, data);
+                await PublishQueueItem(target, data);
             }
         }
 
-        public async Task PushDataToTarget(TargetQueueModel target, string data)
+        public async Task PublishQueueItem(TargetQueueModel target, string data)
         {
             if (_targetQueues.TryGetValue(target.Type, out var queueName))
             {
