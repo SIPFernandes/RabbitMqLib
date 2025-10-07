@@ -4,6 +4,6 @@ namespace RabbitMqLib.Client.Areas.Interfaces
 {
     public interface IRabbitMqClient
     {
-        Task ConsumeQueueItem(QueueItemModel queueItem, CancellationToken cancellationToken = default);
+        Task ProcessQueueItem(QueueItemModel queueItem, CancellationToken cancellationToken = default);
     }
 }
