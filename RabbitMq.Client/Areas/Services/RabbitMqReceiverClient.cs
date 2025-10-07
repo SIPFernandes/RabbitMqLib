@@ -10,19 +10,19 @@ using RabbitMqLib.Client.Data.Models;
 
 namespace RabbitMqLib.Client.Areas.Services
 {
-    public class RabbitMqClientService : IHostedService
+    public class RabbitMqReceiverClient : IHostedService
     {
         private readonly IRabbitMqReceiverService _rabbitMqService;
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<RabbitMqClientService> _logger;
+        private readonly ILogger<RabbitMqReceiverClient> _logger;
         private readonly Dictionary<string, HashSet<string>> _sourceQueues;
         private readonly List<Task> _runningTasks = [];
         private volatile CancellationTokenSource? _cts;
         private readonly ushort _queuePrefetchCount = 0;
 
-        public RabbitMqClientService(IRabbitMqReceiverService rabbitMqService,
+        public RabbitMqReceiverClient(IRabbitMqReceiverService rabbitMqService,
             IServiceProvider serviceProvider, IConfiguration configuration,
-            ILogger<RabbitMqClientService> logger)
+            ILogger<RabbitMqReceiverClient> logger)
         {
             _rabbitMqService = rabbitMqService;
             _serviceProvider = serviceProvider;

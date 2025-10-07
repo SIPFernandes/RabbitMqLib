@@ -9,11 +9,17 @@ namespace RabbitMqLib.Client
     {
         public static void ConfigureServices(IConfiguration configuration, IServiceCollection services)
         {
-            services.AddSingleton<RabbitMqClientService>();
-            services.AddHostedService(provider =>
-                provider.GetRequiredService<RabbitMqClientService>());
+            services.AddSingleton<RabbitMqService>();
+            services.AddSingleton<IRabbitMqReceiverService>(provider =>
+                provider.GetRequiredService<RabbitMqService>());
+            services.AddSingleton<IRabbitMqSenderService>(provider =>
+                provider.GetRequiredService<RabbitMqService>());
 
-            services.AddSingleton<IRabbitMqReceiverService, RabbitMqService>();
+            services.AddSingleton<IRabbitMqSenderClient, RabbitMqSenderClient>();
+
+            services.AddSingleton<RabbitMqReceiverClient>();
+            services.AddHostedService(provider =>
+                provider.GetRequiredService<RabbitMqReceiverClient>());
 
             //services.AddScoped<IRabbitMqClient, ProcessQueueItemService>();
         }

@@ -1,6 +1,6 @@
 ﻿using RabbitMqLib.Client.Data.Models;
 
-namespace RabbitMqLib.Client.Areas.Services
+namespace RabbitMqLib.Client.Areas.Interfaces
 {
     public interface IRabbitMqClient
     {

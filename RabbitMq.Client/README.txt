@@ -3,11 +3,18 @@
 
 Register the services as singleton:
 
-    services.AddSingleton<RabbitMqClientService>();
-    services.AddHostedService(provider =>
-        provider.GetRequiredService<RabbitMqClientService>());
+    services.AddSingleton<RabbitMqService>();
+    services.AddSingleton<IRabbitMqReceiverService>(provider =>
+        provider.GetRequiredService<RabbitMqService>());
+    services.AddSingleton<IRabbitMqSenderService>(provider =>
+        provider.GetRequiredService<RabbitMqService>());
 
-    services.AddSingleton<IRabbitMqReceiverService, RabbitMqService>();
+    services.AddSingleton<IRabbitMqSenderClient, RabbitMqSenderClient>();
+
+    services.AddSingleton<RabbitMqReceiverClient>();
+    services.AddHostedService(provider =>
+        provider.GetRequiredService<RabbitMqReceiverClient>());
+
     services.AddScoped<IRabbitMqClient, ProcessQueueItemService>();
 
 # no credentials (dev environment)
