@@ -39,22 +39,27 @@ namespace RabbitMqLib.Client.Areas.Services
         {
             foreach (var target in targets)
             {
-                if (_targetQueues.TryGetValue(target.Type, out var queueName))
-                {
-                    var queueItem = new QueueItemModel()
-                    {
-                        Id = target.Id,
-                        Data = data,
-                        Type = target.Type,
-                    };
+                await PushDataToTarget(target, data);
+            }
+        }
 
-                    await PushData(queueItem, queueName);
-                }
-                else
+        public async Task PushDataToTarget(TargetQueueModel target, string data)
+        {
+            if (_targetQueues.TryGetValue(target.Type, out var queueName))
+            {
+                var queueItem = new QueueItemModel()
                 {
-                    _logger.LogError("Queue Name for type {type} not found",
-                        target.Type);
-                }
+                    Id = target.Id,
+                    Data = data,
+                    Type = target.Type,
+                };
+
+                await PushData(queueItem, queueName);
+            }
+            else
+            {
+                _logger.LogError("Queue Name for type {type} not found",
+                    target.Type);
             }
         }
 
