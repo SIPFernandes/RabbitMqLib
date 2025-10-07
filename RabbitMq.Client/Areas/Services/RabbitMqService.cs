@@ -23,9 +23,15 @@ namespace RabbitMqLib.Client.Areas.Services
         }
 
         public async Task Receive(string queue, Func<object, string, Task> action,
-            bool autoAck = true, bool requeue = false, CancellationToken cancellationToken = default)
+            bool autoAck = true, bool requeue = false, ushort? prefetchCount = null,
+            CancellationToken cancellationToken = default)
         {
             var channel = await CreateChannel(queue);
+
+            if (prefetchCount.HasValue)
+            {
+                await channel.BasicQosAsync(0, prefetchCount.Value, false, cancellationToken);
+            }
 
             var consumer = new AsyncEventingBasicConsumer(channel);
 
