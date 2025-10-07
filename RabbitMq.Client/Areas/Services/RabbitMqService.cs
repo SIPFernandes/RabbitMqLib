@@ -125,21 +125,21 @@ namespace RabbitMqLib.Client.Areas.Services
 
         private async static Task<IConnection> GetConnection(IConfiguration configuration)
         {
-            var credentials = configuration[RabbitMqConsts.Section + ":" + RabbitMqConsts.Configuration.UsingCredentials];
-            var hostName = configuration[RabbitMqConsts.Section + ":" + RabbitMqConsts.Configuration.HostName] ??
-                throw new NullReferenceException(RabbitMqConsts.Configuration.HostName);
+            var credentials = configuration[RabbitMqConsts.Section + ":" + RabbitMqConsts.ServerConfiguration.UsingCredentials];
+            var hostName = configuration[RabbitMqConsts.Section + ":" + RabbitMqConsts.ServerConfiguration.HostName] ??
+                throw new NullReferenceException(RabbitMqConsts.ServerConfiguration.HostName);
 
             ConnectionFactory connectionFactory;
 
             if (!string.IsNullOrEmpty(credentials) && bool.Parse(credentials))
             {
-                var userName = configuration[RabbitMqConsts.Section + ":" + RabbitMqConsts.Configuration.UserName];
-                var password = configuration[RabbitMqConsts.Section + ":" + RabbitMqConsts.Configuration.Password];
+                var userName = configuration[RabbitMqConsts.Section + ":" + RabbitMqConsts.ServerConfiguration.UserName];
+                var password = configuration[RabbitMqConsts.Section + ":" + RabbitMqConsts.ServerConfiguration.Password];
 
                 if (userName == null || password == null)
                 {
-                    throw new NullReferenceException(RabbitMqConsts.Configuration.UserName + "or"
-                        + RabbitMqConsts.Configuration.Password);
+                    throw new NullReferenceException(RabbitMqConsts.ServerConfiguration.UserName + "or"
+                        + RabbitMqConsts.ServerConfiguration.Password);
                 }
 
                 connectionFactory = new ConnectionFactory()

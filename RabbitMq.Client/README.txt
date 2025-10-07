@@ -1,15 +1,30 @@
 ﻿
 # latest RabbitMQ 3.13
 
-Register the service as singleton
+Register the services as singleton:
+
+    services.AddSingleton<RabbitMqClientService>();
+    services.AddHostedService(provider =>
+        provider.GetRequiredService<RabbitMqClientService>());
+
+    services.AddSingleton<IRabbitMqReceiverService, RabbitMqService>();
+    services.AddScoped<IRabbitMqClient, ProcessQueueItemService>();
 
 # no credentials (dev environment)
 
 Add to appsettings: 
+
   "RabbitMQ": {
-    "HostName": "localhost",
-    "DisseminationQueue": "DisseminationQueue"
+    "HostName": "localhost"
   },
+  "SourceQueues": {
+    "AdsQueue": ["Ads"],
+    "SubscriptionQueue": ["Subscription"]
+  },
+  "TargetQueues": {
+    "Topic": "TopicQueue",
+    "Adt":  "AdtQueue"
+  }
 
 Run command:
 docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.13-management
@@ -17,13 +32,20 @@ docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.13-ma
 # using credentials: (dont forget to change respective app.config)
 
 Add to appsettings:
-"RabbitMQ": {
+  "RabbitMQ": {
     "UsingCredentials": "true",
     "UserName": "installuser",
     "Password": "Password",
-    "HostName": "localhost",
-    "DisseminationQueue": "DisseminationQueue"
+    "HostName": "localhost"
   },
+  "SourceQueues": {
+    "AdsQueue": ["Ads"],
+    "SubscriptionQueue": ["Subscription"]
+  },
+  "TargetQueues": {
+    "Topic": "TopicQueue",
+    "Adt":  "AdtQueue"
+  }
 
 Run command:
 docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 -e RABBITMQ_DEFAULT_USER=installuser -e RABBITMQ_DEFAULT_PASS=Password rabbitmq:3.13-management

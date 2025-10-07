@@ -2,7 +2,9 @@
 {
     public class RabbitMqConsts
     {
-        public class Configuration
+        public const string Section = "RabbitMQ";
+
+        public class ServerConfiguration
         {
             public const string UsingCredentials = "UsingCredentials";
             public const string HostName = "HostName";
@@ -10,11 +12,11 @@
             public const string Password = "Password";
         }
 
-        public const string Section = "RabbitMQ";
-
-        public class Queues
+        public class ClientConfiguration
         {
-            public const string Notification = "Notification";
+            public const string TargetQueues = "TargetQueues";
+            public const string SourceQueues = "SourceQueues";
+            public const string QueuePrefetchCount = "QueuePrefetchCount";
         }
     }
 }
