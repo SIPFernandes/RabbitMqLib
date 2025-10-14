@@ -10,19 +10,19 @@ using RabbitMqLib.Client.Data.Models;
 
 namespace RabbitMqLib.Client.Areas.Services
 {
-    public class RabbitMqReceiverClient : IHostedService
+    public class RabbitMqSubscriberClient : IHostedService
     {
-        private readonly IRabbitMqReceiverService _rabbitMqService;
+        private readonly IRabbitMqSubscriberService _rabbitMqService;
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<RabbitMqReceiverClient> _logger;
+        private readonly ILogger<RabbitMqSubscriberClient> _logger;
         private readonly Dictionary<string, HashSet<string>> _sourceQueues;
         private readonly List<Task> _runningTasks = [];
         private volatile CancellationTokenSource? _cts;
         private readonly ushort _queuePrefetchCount = 0;
 
-        public RabbitMqReceiverClient(IRabbitMqReceiverService rabbitMqService,
+        public RabbitMqSubscriberClient(IRabbitMqSubscriberService rabbitMqService,
             IServiceProvider serviceProvider, IConfiguration configuration,
-            ILogger<RabbitMqReceiverClient> logger)
+            ILogger<RabbitMqSubscriberClient> logger)
         {
             _rabbitMqService = rabbitMqService;
             _serviceProvider = serviceProvider;
@@ -152,9 +152,9 @@ namespace RabbitMqLib.Client.Areas.Services
 
             using var scope = _serviceProvider.CreateScope();
 
-            var rabbitMqClient = scope.ServiceProvider.GetRequiredService<IRabbitMqClient>();
+            var processQueueItemService = scope.ServiceProvider.GetRequiredService<IProcessQueueItemService>();
 
-            await rabbitMqClient.ProcessQueueItem(queueItem, cancelationToken);
+            await processQueueItemService.ProcessQueueItem(queueItem, cancelationToken);
         }
     }
 }

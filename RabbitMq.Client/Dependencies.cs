@@ -7,21 +7,30 @@ namespace RabbitMqLib.Client
 {
     public class Dependencies
     {
-        public static void ConfigureServices(IConfiguration configuration, IServiceCollection services)
+        public static void ConfigureServices(IConfiguration configuration, IServiceCollection services,
+            bool queuePublisher = false, bool queueSubscriber = false)
         {
             services.AddSingleton<RabbitMqService>();
-            services.AddSingleton<IRabbitMqReceiverService>(provider =>
-                provider.GetRequiredService<RabbitMqService>());
-            services.AddSingleton<IRabbitMqSenderService>(provider =>
-                provider.GetRequiredService<RabbitMqService>());
 
-            services.AddSingleton<IRabbitMqSenderClient, RabbitMqSenderClient>();
+            if (queueSubscriber)
+            {
+                services.AddSingleton<IRabbitMqSubscriberService>(provider =>
+                    provider.GetRequiredService<RabbitMqService>());
 
-            services.AddSingleton<RabbitMqReceiverClient>();
-            services.AddHostedService(provider =>
-                provider.GetRequiredService<RabbitMqReceiverClient>());
+                services.AddSingleton<RabbitMqSubscriberClient>();
+                services.AddHostedService(provider =>
+                    provider.GetRequiredService<RabbitMqSubscriberClient>());
 
-            //services.AddScoped<IRabbitMqClient, ProcessQueueItemService>();
+                //services.AddScoped<IRabbitMqClient, ProcessQueueItemService>();
+            }
+
+            if (queuePublisher)
+            {
+                services.AddSingleton<IRabbitMqPublisherService>(provider =>
+                    provider.GetRequiredService<RabbitMqService>());
+
+                services.AddSingleton<IRabbitMqPublisherClient, RabbitMqPublisherClient>();
+            }
         }
     }
 }

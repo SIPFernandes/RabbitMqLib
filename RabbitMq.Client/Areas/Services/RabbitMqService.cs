@@ -9,7 +9,7 @@ using System.Text;
 namespace RabbitMqLib.Client.Areas.Services
 {
     public class RabbitMqService(ILogger<RabbitMqService> logger,
-        IConfiguration configuration) : IRabbitMqSenderService, IRabbitMqReceiverService
+        IConfiguration configuration) : IRabbitMqPublisherService, IRabbitMqSubscriberService
     {
         private readonly IConnection _connection = GetConnection(configuration).Result;
 

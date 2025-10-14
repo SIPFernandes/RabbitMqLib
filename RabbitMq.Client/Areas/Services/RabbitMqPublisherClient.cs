@@ -7,14 +7,14 @@ using RabbitMqLib.Client.Data.Models;
 
 namespace RabbitMqLib.Client.Areas.Services
 {
-    internal class RabbitMqSenderClient : IRabbitMqSenderClient
+    internal class RabbitMqPublisherClient : IRabbitMqPublisherClient
     {
-        private readonly IRabbitMqSenderService _rabbitMqService;
-        private readonly ILogger<RabbitMqSenderClient> _logger;
+        private readonly IRabbitMqPublisherService _rabbitMqService;
+        private readonly ILogger<RabbitMqPublisherClient> _logger;
         private readonly Dictionary<string, string> _targetQueues;
 
-        public RabbitMqSenderClient(IRabbitMqSenderService rabbitMqService,
-            IConfiguration configuration, ILogger<RabbitMqSenderClient> logger)
+        public RabbitMqPublisherClient(IRabbitMqPublisherService rabbitMqService,
+            IConfiguration configuration, ILogger<RabbitMqPublisherClient> logger)
         {
             _rabbitMqService = rabbitMqService;
             _logger = logger;

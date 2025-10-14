@@ -1,8 +1,7 @@
 ﻿namespace RabbitMqLib.Client.Areas.Interfaces
 {
-    public interface IRabbitMqReceiverService
+    public interface IRabbitMqSubscriberService
     {
-        Task Send(string queue, string data, CancellationToken cancellationToken = default);
         Task Receive(string queue, Func<object, string, Task> action,
             bool autoAck = true, bool requeue = false, ushort? prefetchCount = null, 
             CancellationToken cancellationToken = default);
