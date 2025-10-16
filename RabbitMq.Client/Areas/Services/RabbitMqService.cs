@@ -8,10 +8,25 @@ using System.Text;
 
 namespace RabbitMqLib.Client.Areas.Services
 {
-    public class RabbitMqService(ILogger<RabbitMqService> logger,
-        IConfiguration configuration) : IRabbitMqPublisherService, IRabbitMqSubscriberService
+    public class RabbitMqService : IRabbitMqPublisherService, IRabbitMqSubscriberService
     {
-        private readonly IConnection _connection = GetConnection(configuration).Result;
+        private readonly IConfigurationSection _rabbitMqSection;
+        private readonly ILogger<RabbitMqService> _logger;
+        private readonly SemaphoreSlim _connectionLock = new(1, 1);
+        private IConnection? _connection;
+
+        public RabbitMqService(ILogger<RabbitMqService> logger, IConfiguration configuration)
+        {
+            _logger = logger;
+
+            var rabbitMqSection = configuration.GetSection(RabbitMqConsts.Section);
+            if (!rabbitMqSection.Exists())
+            {
+                throw new NullReferenceException($"Configuration section '{RabbitMqConsts.Section}' is missing.");
+            }
+
+            _rabbitMqSection = rabbitMqSection;
+        }
 
         public async Task Send(string queue, string data, CancellationToken cancellationToken = default)
         {
@@ -56,7 +71,7 @@ namespace RabbitMqLib.Client.Areas.Services
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error during Action after receiving item from queue.");
+                    _logger.LogError(ex, "Error during Action after receiving item from queue.");
 
                     if (!autoAck)
                     {
@@ -76,7 +91,7 @@ namespace RabbitMqLib.Client.Areas.Services
             }
             catch (TaskCanceledException)
             {
-                logger.LogError("Cancelation Token canceled.");
+                _logger.LogError("Cancelation Token canceled.");
             }
 
         }
@@ -105,14 +120,14 @@ namespace RabbitMqLib.Client.Areas.Services
                 await action(message);
 
                 if (!autoAck)
-                    await Acknowledge(queue, ea.DeliveryTag, false);
+                    await channel.BasicAckAsync(ea.DeliveryTag, false, cancellationToken);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error during Action after receiving item from queue.");
+                _logger.LogError(ex, "Error during Action after receiving item from queue.");
 
                 if (!autoAck)
-                    await Reject(queue, ea.DeliveryTag, requeue);
+                    await channel.BasicRejectAsync(ea.DeliveryTag, requeue, cancellationToken);
             }
             finally
             {
@@ -121,28 +136,48 @@ namespace RabbitMqLib.Client.Areas.Services
 
             return Task.CompletedTask;
         }
-        //autoAck: true
 
-        private async static Task<IConnection> GetConnection(IConfiguration configuration)
+        private async Task EnsureConnectedAsync()
         {
-            var credentials = configuration[RabbitMqConsts.Section + ":" + RabbitMqConsts.ServerConfiguration.UsingCredentials];
-            var hostName = configuration[RabbitMqConsts.Section + ":" + RabbitMqConsts.ServerConfiguration.HostName] ??
-                throw new NullReferenceException(RabbitMqConsts.ServerConfiguration.HostName);
+            await _connectionLock.WaitAsync();
+
+            try
+            {
+                if (_connection == null || !_connection.IsOpen)
+                {
+                    _connection = await GetConnection();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to connect to RabbitMQ");
+                throw;
+            }
+            finally
+            {
+                _connectionLock.Release();
+            }
+        }
+
+        private async Task<IConnection> GetConnection()
+        {
+            var credentials = _rabbitMqSection[RabbitMqConsts.ServerConfiguration.UsingCredentials];
+            var hostName = _rabbitMqSection[RabbitMqConsts.ServerConfiguration.HostName]
+                ?? throw new NullReferenceException(RabbitMqConsts.ServerConfiguration.HostName);
 
             ConnectionFactory connectionFactory;
 
             if (!string.IsNullOrEmpty(credentials) && bool.Parse(credentials))
             {
-                var userName = configuration[RabbitMqConsts.Section + ":" + RabbitMqConsts.ServerConfiguration.UserName];
-                var password = configuration[RabbitMqConsts.Section + ":" + RabbitMqConsts.ServerConfiguration.Password];
+                var userName = _rabbitMqSection[RabbitMqConsts.ServerConfiguration.UserName];
+                var password = _rabbitMqSection[RabbitMqConsts.ServerConfiguration.Password];
 
                 if (userName == null || password == null)
                 {
-                    throw new NullReferenceException(RabbitMqConsts.ServerConfiguration.UserName + "or"
-                        + RabbitMqConsts.ServerConfiguration.Password);
+                    throw new NullReferenceException($"{RabbitMqConsts.ServerConfiguration.UserName} or {RabbitMqConsts.ServerConfiguration.Password} is missing.");
                 }
 
-                connectionFactory = new ConnectionFactory()
+                connectionFactory = new ConnectionFactory
                 {
                     HostName = hostName,
                     UserName = userName,
@@ -151,7 +186,7 @@ namespace RabbitMqLib.Client.Areas.Services
             }
             else
             {
-                connectionFactory = new ConnectionFactory()
+                connectionFactory = new ConnectionFactory
                 {
                     HostName = hostName,
                 };
@@ -163,29 +198,16 @@ namespace RabbitMqLib.Client.Areas.Services
 
         private async Task<IChannel> CreateChannel(string queue)
         {
+            await EnsureConnectedAsync();
+
+            if (_connection == null || !_connection.IsOpen)
+                throw new InvalidOperationException("RabbitMQ connection is not available after EnsureConnectedAsync.");
+
             var channel = await _connection.CreateChannelAsync();
 
             await channel.QueueDeclareAsync(queue, true, false, false, null);
 
             return channel;
-        }
-
-        private async Task Acknowledge(string queue, ulong deliveryTag, bool multiple = false)
-        {
-            var newChanel = await CreateChannel(queue);
-
-            await newChanel.BasicAckAsync(deliveryTag, multiple);
-            
-            await newChanel.CloseAsync();
-        }
-
-        private async Task Reject(string queue, ulong deliveryTag, bool requeue = false)
-        {
-            var newChanel = await CreateChannel(queue);
-            
-            await newChanel.BasicRejectAsync(deliveryTag, requeue);
-            
-            await newChanel.CloseAsync();
         }
     }
 }
