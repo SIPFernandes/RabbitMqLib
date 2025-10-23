@@ -31,7 +31,8 @@ Add to appsettings:
   "TargetQueues": {
     "Topic": "TopicQueue",
     "Adt":  "AdtQueue"
-  }
+  },
+  "QueuePrefetchCount": 0,
 
 Run command:
 docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.13-management
@@ -52,7 +53,8 @@ Add to appsettings:
   "TargetQueues": {
     "Topic": "TopicQueue",
     "Adt":  "AdtQueue"
-  }
+  },
+  "QueuePrefetchCount": 0,
 
 Run command:
 docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 -e RABBITMQ_DEFAULT_USER=installuser -e RABBITMQ_DEFAULT_PASS=Password rabbitmq:3.13-management
