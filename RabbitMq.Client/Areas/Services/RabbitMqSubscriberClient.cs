@@ -99,7 +99,8 @@ namespace RabbitMqLib.Client.Areas.Services
             }
         }
 
-        private async Task OnQueueItemReceive(object queueData, string message)
+        private async Task OnQueueItemReceive(object queueData, string message,
+            IReadOnlyBasicProperties basicProperties)
         {
             try
             {
@@ -138,7 +139,7 @@ namespace RabbitMqLib.Client.Areas.Services
                     return;
                 }
 
-                await ProcessQueueItem(queueItem);
+                await ProcessQueueItem(queueItem, basicProperties);
             }
             catch (Exception ex)
             {
@@ -146,7 +147,8 @@ namespace RabbitMqLib.Client.Areas.Services
             }
         }
 
-        private async Task ProcessQueueItem(QueueItemModel queueItem)
+        private async Task ProcessQueueItem(QueueItemModel queueItem,
+            IReadOnlyBasicProperties basicProperties)
         {
             var cancelationToken = _cts?.Token ?? CancellationToken.None;
 
@@ -154,7 +156,7 @@ namespace RabbitMqLib.Client.Areas.Services
 
             var processQueueItemService = scope.ServiceProvider.GetRequiredService<IProcessQueueItemService>();
 
-            await processQueueItemService.ProcessQueueItem(queueItem, cancelationToken);
+            await processQueueItemService.ProcessQueueItem(queueItem, basicProperties, cancelationToken);
         }
     }
 }

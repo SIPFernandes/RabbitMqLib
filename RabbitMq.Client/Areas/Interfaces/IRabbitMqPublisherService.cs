@@ -1,7 +1,10 @@
-﻿namespace RabbitMqLib.Client.Areas.Interfaces
+﻿using RabbitMQ.Client;
+
+namespace RabbitMqLib.Client.Areas.Interfaces
 {
     public interface IRabbitMqPublisherService
     {
-        Task Send(string queue, string data, CancellationToken cancellationToken = default);
+        Task Send(string queue, string data, BasicProperties? basicProperties = null,
+            CancellationToken cancellationToken = default);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using RabbitMQ.Client;
 using RabbitMqLib.Client.Areas.Interfaces;
 using RabbitMqLib.Client.Data.Consts;
 using RabbitMqLib.Client.Data.Models;
@@ -35,15 +36,17 @@ namespace RabbitMqLib.Client.Areas.Services
                 );
         }
 
-        public async Task PublishQueueItem(IEnumerable<TargetQueueModel> targets, string data)
+        public async Task PublishQueueItem(IEnumerable<TargetQueueModel> targets, string data,
+            BasicProperties? basicProperties = null)
         {
             foreach (var target in targets)
             {
-                await PublishQueueItem(target, data);
+                await PublishQueueItem(target, data, basicProperties);
             }
         }
 
-        public async Task PublishQueueItem(TargetQueueModel target, string data)
+        public async Task PublishQueueItem(TargetQueueModel target, string data,
+            BasicProperties? basicProperties = null)
         {
             if (_targetQueues.TryGetValue(target.Type, out var queueName))
             {
@@ -54,7 +57,7 @@ namespace RabbitMqLib.Client.Areas.Services
                     Type = target.Type,
                 };
 
-                await PushData(queueItem, queueName);
+                await PushData(queueItem, queueName, basicProperties);
             }
             else
             {
@@ -63,11 +66,12 @@ namespace RabbitMqLib.Client.Areas.Services
             }
         }
 
-        private async Task PushData(QueueItemModel queueItem, string queueName)
+        private async Task PushData(QueueItemModel queueItem, string queueName,
+            BasicProperties? basicProperties = null)
         {
             var jsonString = JsonConvert.SerializeObject(queueItem);
 
-            await _rabbitMqService.Send(queueName, jsonString);
+            await _rabbitMqService.Send(queueName, jsonString, basicProperties);
         }
     }
 }

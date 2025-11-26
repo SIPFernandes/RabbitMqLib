@@ -28,16 +28,18 @@ namespace RabbitMqLib.Client.Areas.Services
             _rabbitMqSection = rabbitMqSection;
         }
 
-        public async Task Send(string queue, string data, CancellationToken cancellationToken = default)
+        public async Task Send(string queue, string data, BasicProperties? basicProperties = null,
+            CancellationToken cancellationToken = default)
         {
             var channel = await CreateChannel(queue);
 
-            await channel.BasicPublishAsync(string.Empty, queue, false, Encoding.UTF8.GetBytes(data), cancellationToken);
+            await channel.BasicPublishAsync(string.Empty, queue, false,
+                basicProperties ?? new(), Encoding.UTF8.GetBytes(data), cancellationToken);
 
             await channel.CloseAsync(cancellationToken);
         }
 
-        public async Task Receive(string queue, Func<object, string, Task> action,
+        public async Task Receive(string queue, Func<object, string, IReadOnlyBasicProperties, Task> action,
             bool autoAck = true, bool requeue = false, ushort? prefetchCount = null,
             CancellationToken cancellationToken = default)
         {
@@ -62,7 +64,7 @@ namespace RabbitMqLib.Client.Areas.Services
 
                 try
                 {
-                    await action(model, message);
+                    await action(model, message, ea.BasicProperties);
 
                     if (!autoAck)
                     {
@@ -96,7 +98,7 @@ namespace RabbitMqLib.Client.Areas.Services
 
         }
 
-        public async Task<Task?> Pull(string queue, Func<string, Task<object>> action,
+        public async Task<Task?> Pull(string queue, Func<string, IReadOnlyBasicProperties, Task<object>> action,
             bool autoAck = true, bool requeue = false, CancellationToken cancellationToken = default)
         {
             var channel = await CreateChannel(queue);
@@ -117,7 +119,7 @@ namespace RabbitMqLib.Client.Areas.Services
                 if (cancellationToken.IsCancellationRequested)
                     return null;
 
-                await action(message);
+                await action(message, ea.BasicProperties);
 
                 if (!autoAck)
                     await channel.BasicAckAsync(ea.DeliveryTag, false, cancellationToken);
