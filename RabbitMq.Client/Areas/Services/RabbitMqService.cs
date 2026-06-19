@@ -87,7 +87,6 @@ namespace RabbitMqLib.Client.Areas.Services
             }
         }
 
-
         public async Task<Task?> Pull(string queue, Func<string, IReadOnlyBasicProperties, Task<object>> action,
             bool autoAck = true, bool requeue = false, CancellationToken cancellationToken = default)
         {
