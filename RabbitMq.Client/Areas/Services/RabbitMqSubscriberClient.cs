@@ -88,36 +88,27 @@ namespace RabbitMqLib.Client.Areas.Services
             {
                 try
                 {
-                    await _rabbitMqService.Receive(queueName, OnQueueItemReceive, false, false, _queuePrefetchCount, token);
+                    await _rabbitMqService.Receive(queueName, OnQueueItemReceive,
+                        false, false, _queuePrefetchCount, token);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Listener for queue '{queueName}' failed. Retrying in 5 seconds...", queueName);
-
+                    
                     await Task.Delay(TimeSpan.FromSeconds(5), token);
                 }
             }
         }
 
-        private async Task OnQueueItemReceive(object queueData, string message,
-            IReadOnlyBasicProperties basicProperties)
+        private async Task OnQueueItemReceive(string queueName,
+            string message, IReadOnlyBasicProperties basicProperties)
         {
             try
             {
-                if (queueData is not AsyncDefaultBasicConsumer queue)
+                if (!_sourceQueues.TryGetValue(queueName, out var queueItemTypes))
                 {
-                    _logger.LogError("Invalid queue data received.");
-
-                    return;
-                }
-
-                var queueName = queue.Channel.CurrentQueue;
-
-                if (string.IsNullOrEmpty(queueName) ||
-                    !_sourceQueues.TryGetValue(queueName, out var queueItemTypes))
-                {
-                    _logger.LogError("Queue Name is missing from received queue data.");
-
+                    _logger.LogError("Queue Name {queueName} is missing from source queues configuration.", queueName);
+                    
                     return;
                 }
 
@@ -126,16 +117,16 @@ namespace RabbitMqLib.Client.Areas.Services
                 if (queueItem == null)
                 {
                     _logger.LogError("Invalid queue message received, expected format {format}.",
-                            nameof(QueueItemModel));
-
+                        nameof(QueueItemModel));
+                    
                     return;
                 }
 
                 if (!queueItemTypes.Contains(queueItem.Type))
                 {
                     _logger.LogError("Invalid queue item type {type} for queue named {queueName}.",
-                            queueItem.Type, queueName);
-
+                        queueItem.Type, queueName);
+                    
                     return;
                 }
 

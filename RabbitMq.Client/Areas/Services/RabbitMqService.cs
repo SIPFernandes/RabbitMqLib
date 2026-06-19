@@ -39,37 +39,30 @@ namespace RabbitMqLib.Client.Areas.Services
             await channel.CloseAsync(cancellationToken);
         }
 
-        public async Task Receive(string queue, Func<object, string, IReadOnlyBasicProperties, Task> action,
+        public async Task Receive(string queue, Func<string, string, IReadOnlyBasicProperties, Task> action,
             bool autoAck = true, bool requeue = false, ushort? prefetchCount = null,
             CancellationToken cancellationToken = default)
         {
             var channel = await CreateChannel(queue);
 
             if (prefetchCount.HasValue)
-            {
                 await channel.BasicQosAsync(0, prefetchCount.Value, false, cancellationToken);
-            }
 
             var consumer = new AsyncEventingBasicConsumer(channel);
 
             consumer.ReceivedAsync += async (model, ea) =>
             {
-
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                var body = ea.Body.ToArray();
-
-                var message = Encoding.UTF8.GetString(body);
+                var message = Encoding.UTF8.GetString(ea.Body.ToArray());
 
                 try
                 {
-                    await action(model, message, ea.BasicProperties);
+                    await action(queue, message, ea.BasicProperties);
 
                     if (!autoAck)
-                    {
-                        await channel.BasicAckAsync(ea.DeliveryTag, multiple: false, cancellationToken);
-                    }
+                        await channel.BasicAckAsync(ea.DeliveryTag, false, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -77,15 +70,12 @@ namespace RabbitMqLib.Client.Areas.Services
 
                     if (!autoAck)
                     {
-                        await channel.BasicRejectAsync(ea.DeliveryTag, requeue: requeue, cancellationToken);
+                        await channel.BasicRejectAsync(ea.DeliveryTag, requeue, cancellationToken);
                     }
                 }
             };
 
-            await channel.BasicConsumeAsync(queue,
-                autoAck, consumer, cancellationToken);
-
-
+            await channel.BasicConsumeAsync(queue, autoAck, consumer, cancellationToken);
             // Keep the method alive until cancellation is requested
             try
             {
@@ -93,10 +83,10 @@ namespace RabbitMqLib.Client.Areas.Services
             }
             catch (TaskCanceledException)
             {
-                _logger.LogError("Cancelation Token canceled.");
+                _logger.LogInformation("Cancellation requested, stopping consumer.");
             }
-
         }
+
 
         public async Task<Task?> Pull(string queue, Func<string, IReadOnlyBasicProperties, Task<object>> action,
             bool autoAck = true, bool requeue = false, CancellationToken cancellationToken = default)
